@@ -9,17 +9,17 @@ import UIKit
 
 class Canvas: UIView {
     
-    var lines = [[CGPoint]]()
     
     // public functions
     
     func undo() {
         
         _ = lines.popLast()
-        guard !lines.isEmpty else {return}
-        lines.removeLast()
-        
+        layer.setNeedsLayout()
+        layer.displayIfNeeded()
+
         setNeedsDisplay()
+        
     }
     
     func clear() {
@@ -27,6 +27,19 @@ class Canvas: UIView {
         setNeedsDisplay()
     }
     
+    fileprivate var strokeColor = UIColor.black
+    fileprivate var strokeWidth: Float = 10
+    
+    func setStrokeColor(color: UIColor) {
+        self.strokeColor = color
+    }
+    
+    func setStrokeWidth(width: Float) {
+        self.strokeWidth = .init(width)
+    }
+    
+    private var lines = [Line]()
+
     override func draw(_ rect: CGRect) {
         // allow us to custom drawing
         super.draw(rect)
@@ -40,25 +53,25 @@ class Canvas: UIView {
 //
 //        context.move(to: startPoint)
 //        context.addLine(to: endPoint)
-        
-        context.setStrokeColor(UIColor.systemRed.cgColor)
-        context.setLineWidth(10)
-        context.setLineCap(.butt)
-        
+                
+
 
         lines.forEach { (line) in
-            for (i, p) in line.enumerated() {
-                
+            context.setStrokeColor(line.color.cgColor)
+            context.setLineWidth(CGFloat(line.strokeWidth))
+            context.setLineCap(.round)
+            for (i, p) in line.points.enumerated() {
                 if i == 0 {
                     context.move(to: p)
                 } else {
                     context.addLine(to: p)
                 }
             }
+            
+            context.strokePath()
+
         }
         
-        
-        context.strokePath()
         
     }
     // let's ditch this line
@@ -73,7 +86,7 @@ class Canvas: UIView {
 //        line.append(point)
         
         guard var lastLine = lines.popLast() else { return } // Removes and returns the last element of the collection.
-        lastLine.append(point)
+        lastLine.points.append(point)
         lines.append(lastLine)
         
         setNeedsDisplay() //  redraws
@@ -81,7 +94,7 @@ class Canvas: UIView {
     
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-            lines.append([CGPoint]())
+            lines.append(Line(color: strokeColor, strokeWidth: strokeWidth, points: []))
     }
     
 
